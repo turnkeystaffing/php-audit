@@ -1,0 +1,49 @@
+{
+    "name": "turnkey/auditclient",
+    "description": "Audit client library (PHP port of go-audit): synchronous critical delivery, buffered non-critical delivery with HTTP -> Redis -> File fallback, queue consumer and file replay",
+    "type": "library",
+    "license": "proprietary",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:turnkeystaffing/php-authclient.git"
+        }
+    ],
+    "require": {
+        "php": ">=8.4.1",
+        "psr/log": "^3.0",
+        "symfony/http-client": "^7.0",
+        "symfony/service-contracts": "^3.0",
+        "symfony/uid": "^7.0",
+        "turnkey/authclient": "^0.1"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^12.0",
+        "predis/predis": "^2.0",
+        "symfony/console": "^7.0",
+        "symfony/event-dispatcher": "^7.0",
+        "symfony/http-foundation": "^7.0",
+        "symfony/http-kernel": "^7.0",
+        "symfony/messenger": "^7.0"
+    },
+    "suggest": {
+        "predis/predis": "Redis fallback tier (RedisQueueWriter) and audit:consume-queue",
+        "symfony/http-kernel": "AuditFlushSubscriber: flush buffered events on kernel.terminate",
+        "symfony/console": "audit:consume-queue and audit:replay commands",
+        "symfony/messenger": "Flush buffered events after each handled message in workers"
+    },
+    "autoload": {
+        "psr-4": {
+            "Turnkey\\AuditClient\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Turnkey\\AuditClient\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
