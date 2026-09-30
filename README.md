@@ -44,8 +44,6 @@ Retries apply to network errors, 5xx and 429 (`Retry-After` honoured, capped at 
 | `AuditClientFactory`, `Config\AuditClientConfig` | Wiring and configuration |
 | `Symfony\AuditFlushSubscriber` | Flushes on `kernel.terminate`, `console.terminate/error`, Messenger worker events |
 | `Symfony\RequestEventFactory` | Builder pre-filled with IP, User-Agent, `X-Request-ID` and the `audit_user_id` request attribute |
-| `Symfony\Command\ConsumeQueueCommand` | `audit:consume-queue` |
-| `Symfony\Command\ReplayFilesCommand` | `audit:replay` |
 
 ## Symfony integration
 
@@ -106,14 +104,6 @@ services:
 
     Turnkey\AuditClient\Symfony\RequestEventFactory:
         autowire: true
-
-    Turnkey\AuditClient\Symfony\Command\ConsumeQueueCommand:
-        autowire: true
-        tags: [console.command]
-
-    Turnkey\AuditClient\Symfony\Command\ReplayFilesCommand:
-        autowire: true
-        tags: [console.command]
 ```
 
 Keep the token provider cached in Redis (authclient `RedisCache`/`FallbackCache`): a cold token fetch counts against the critical-event budget.
@@ -180,35 +170,13 @@ Tag enrichers with `audit.enricher`. They run inside `log()` (the request is sti
 
 ### 5. Background delivery
 
-```cron
-# Redis queue -> audit service
-* * * * *   php /app/bin/console audit:consume-queue --time-limit=55 --quiet
-# JSONL files -> audit service
-*/5 * * * * php /app/bin/console audit:replay --quiet
-```
+You have to implement cron-job functionality by yourself.
+This library only provides services `RedisQueueConsumer`, `FileReplayer` and you can use them to create a Symfony console commands or in some other way.   
 
-or as supervisor workers:
 
-```ini
-[program:audit-consume-queue]
-command=php /app/bin/console audit:consume-queue --loop --time-limit=3600
-autorestart=true
+**RedisQueueConsumer** pops up to `consumer_batch_size` events (`RPOP key count`, oldest first) and POSTs them. When the service is unavailable the batch is pushed back to the tail (`RPUSH`, order preserved) and the command backs off (loop) or exits (cron). Permanently rejected events (4xx, `retryable=false`) are dropped with an error log. Multiple instances may run in parallel. If the process is killed between `RPOP` and delivery, that batch is lost.
 
-[program:audit-replay]
-command=php /app/bin/console audit:replay --loop --time-limit=3600
-autorestart=true
-```
-
-| Command | Options |
-|---|---|
-| `audit:consume-queue` | `--loop`, `--interval=5`, `--max-backoff=300`, `--max-batches=0`, `--time-limit=0`, `--memory-limit=0` (MB) |
-| `audit:replay` | `--loop`, `--interval=30`, `--max-backoff=300`, `--time-limit=0`, `--memory-limit=0` (MB) |
-
-Both handle SIGTERM/SIGINT by finishing the current batch (requires `ext-pcntl`).
-
-**audit:consume-queue** pops up to `consumer_batch_size` events (`RPOP key count`, oldest first) and POSTs them. When the service is unavailable the batch is pushed back to the tail (`RPUSH`, order preserved) and the command backs off (loop) or exits (cron). Permanently rejected events (4xx, `retryable=false`) are dropped with an error log. Multiple instances may run in parallel. If the process is killed between `RPOP` and delivery, that batch is lost.
-
-**audit:replay** only touches files of closed periods (not today's/this hour's file, and not files modified within `replay_min_file_age` seconds). A file is claimed by `flock` + rename to `*.replaying`, progress is saved in `*.replaying.offset` after every delivered batch, and the file is deleted when complete — an interrupted replay resumes without re-sending delivered batches. Only one replayer runs at a time (`.replay.lock`).
+**FileReplayer** only touches files of closed periods (not today's/this hour's file, and not files modified within `replay_min_file_age` seconds). A file is claimed by `flock` + rename to `*.replaying`, progress is saved in `*.replaying.offset` after every delivered batch, and the file is deleted when complete — an interrupted replay resumes without re-sending delivered batches. Only one replayer runs at a time (`.replay.lock`).
 
 ## Storage formats
 
