@@ -23,7 +23,7 @@ final class RequestEventFactoryTest extends TestCase
         ]);
         $request->attributes->set(RequestEventFactory::USER_ID_ATTRIBUTE, $userId->toRfc4122());
 
-        $event = $this->factory($request)->builder()->withAction('login')->withSuccess()->build();
+        $event = $this->factory($request)->builder()->withAction('login')->withResource('session')->withSuccess()->build();
 
         self::assertSame('203.0.113.7', $event->ipAddress);
         self::assertSame('Mozilla/5.0', $event->userAgent);
@@ -35,7 +35,7 @@ final class RequestEventFactoryTest extends TestCase
     {
         $request = Request::create('/', server: ['HTTP_X_REQUEST_ID' => 'abc-123']);
 
-        $event = $this->factory($request)->builder()->withAction('x')->withSuccess()->build();
+        $event = $this->factory($request)->builder()->withAction('x')->withResource('session')->withSuccess()->build();
 
         self::assertNotSame('abc-123', $event->requestId->toRfc4122());
     }
@@ -46,14 +46,14 @@ final class RequestEventFactoryTest extends TestCase
         $request = Request::create('/');
         $request->attributes->set(RequestEventFactory::USER_ID_ATTRIBUTE, $userId);
 
-        $event = $this->factory($request)->builder()->withAction('x')->withSuccess()->build();
+        $event = $this->factory($request)->builder()->withAction('x')->withResource('session')->withSuccess()->build();
 
         self::assertSame($userId, $event->userId);
     }
 
     public function testWorksOutsideOfRequest(): void
     {
-        $event = (new RequestEventFactory(new RequestStack()))->builder()->withAction('cron')->withSuccess()->build();
+        $event = (new RequestEventFactory(new RequestStack()))->builder()->withAction('cron')->withResource('session')->withSuccess()->build();
 
         self::assertNull($event->ipAddress);
         self::assertNull($event->userId);

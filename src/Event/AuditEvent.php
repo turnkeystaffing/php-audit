@@ -35,8 +35,8 @@ final class AuditEvent
         public readonly ?Outcome $outcome,
         public readonly \DateTimeImmutable $timestamp,
         public readonly Uuid $requestId,
+        public readonly string $resourceType,
         public readonly ?Uuid $userId = null,
-        public readonly string $resourceType = '',
         public readonly ?Uuid $resourceId = null,
         public readonly string $failureReason = '',
         public readonly ?string $ipAddress = null,
@@ -85,6 +85,10 @@ final class AuditEvent
     {
         if ($this->action === '') {
             throw new InvalidAuditEventException('audit event action is required');
+        }
+
+        if ($this->resourceType === '') {
+            throw new InvalidAuditEventException('audit event resource type is required');
         }
 
         if ($this->outcome === null) {

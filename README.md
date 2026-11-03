@@ -127,7 +127,7 @@ final class PasswordController
     {
         // Regular event: buffered, sent after the response.
         $this->audit->log(
-            $this->events->builder()->withAction('password_form_opened')->withSuccess()->build()
+            $this->events->builder()->withAction('password_form_opened')->withResource('user', $user->getId())->withSuccess()->build()
         );
 
         // Critical event: the operation is rolled back if the audit service does not accept it.
@@ -148,6 +148,8 @@ final class PasswordController
     }
 }
 ```
+
+`withAction()` and `withResource()` are required: `build()` throws `InvalidAuditEventException` if either is missing, and the router rejects events with an empty action or resource type (the audit service does not accept them).
 
 `RequestEventFactory` reads the user ID from the `audit_user_id` request attribute (a `Uuid` or UUID string) — set it in your authentication listener.
 

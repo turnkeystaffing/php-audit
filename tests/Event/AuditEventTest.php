@@ -49,7 +49,7 @@ final class AuditEventTest extends TestCase
 
     public function testBuilderDefaults(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->build();
 
         self::assertNull($event->userId);
         self::assertNull($event->ipAddress);
@@ -60,15 +60,15 @@ final class AuditEventTest extends TestCase
 
     public function testEmptyIpIsTreatedAsMissing(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->withHttpContext('', 'ua')->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->withHttpContext('', 'ua')->build();
 
         self::assertNull($event->ipAddress);
     }
 
     public function testFailureAndPartialCarryReason(): void
     {
-        $failure = (new EventBuilder())->withAction('x')->withFailure('bad password')->build();
-        $partial = (new EventBuilder())->withAction('x')->withPartial('smtp retry')->build();
+        $failure = (new EventBuilder())->withAction('x')->withResource('session')->withFailure('bad password')->build();
+        $partial = (new EventBuilder())->withAction('x')->withResource('session')->withPartial('smtp retry')->build();
 
         self::assertSame(Outcome::Failure, $failure->outcome);
         self::assertSame('bad password', $failure->failureReason);
@@ -79,40 +79,61 @@ final class AuditEventTest extends TestCase
     public function testValidEventPassesValidation(): void
     {
         $this->expectNotToPerformAssertions();
-        (new EventBuilder())->withAction('login')->withSuccess()->withHttpContext('::1', '')->build()->validate();
+        (new EventBuilder())->withAction('login')->withResource('session')->withSuccess()->withHttpContext('::1', '')->build()->validate();
     }
 
-    public function testValidationRequiresAction(): void
+    public function testBuildRequiresAction(): void
     {
         $this->expectException(InvalidAuditEventException::class);
         $this->expectExceptionMessage('action is required');
-        (new EventBuilder())->withSuccess()->build()->validate();
+        (new EventBuilder())->withResource('session')->withSuccess()->build();
+    }
+
+    public function testBuildRequiresResource(): void
+    {
+        $this->expectException(InvalidAuditEventException::class);
+        $this->expectExceptionMessage('resource type is required');
+        (new EventBuilder())->withAction('login')->withSuccess()->build();
+    }
+
+    public function testValidationRejectsEmptyAction(): void
+    {
+        $this->expectException(InvalidAuditEventException::class);
+        $this->expectExceptionMessage('action is required');
+        (new EventBuilder())->withAction('')->withResource('session')->withSuccess()->build()->validate();
+    }
+
+    public function testValidationRejectsEmptyResourceType(): void
+    {
+        $this->expectException(InvalidAuditEventException::class);
+        $this->expectExceptionMessage('resource type is required');
+        (new EventBuilder())->withAction('login')->withResource('')->withSuccess()->build()->validate();
     }
 
     public function testValidationRequiresOutcome(): void
     {
         $this->expectException(InvalidAuditEventException::class);
         $this->expectExceptionMessage('outcome');
-        (new EventBuilder())->withAction('login')->build()->validate();
+        (new EventBuilder())->withAction('login')->withResource('session')->build()->validate();
     }
 
     public function testValidationRejectsMalformedIp(): void
     {
         $this->expectException(InvalidAuditEventException::class);
         $this->expectExceptionMessage('invalid IP address');
-        (new EventBuilder())->withAction('login')->withSuccess()->withHttpContext('999.1.1.1', '')->build()->validate();
+        (new EventBuilder())->withAction('login')->withResource('session')->withSuccess()->withHttpContext('999.1.1.1', '')->build()->validate();
     }
 
     public function testValidationRequiresRequestId(): void
     {
         $this->expectException(InvalidAuditEventException::class);
         $this->expectExceptionMessage('request ID');
-        (new EventBuilder())->withAction('login')->withSuccess()->withRequestId(new NilUuid())->build()->validate();
+        (new EventBuilder())->withAction('login')->withResource('session')->withSuccess()->withRequestId(new NilUuid())->build()->validate();
     }
 
     public function testAddContextNeverOverwrites(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->withContextValue('email', 'a@b.c')->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->withContextValue('email', 'a@b.c')->build();
 
         self::assertFalse($event->addContext('email', 'evil@b.c'));
         self::assertTrue($event->addContext('client_id', 'web'));
@@ -121,7 +142,7 @@ final class AuditEventTest extends TestCase
 
     public function testCoreFieldsAreImmutable(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->build();
 
         $this->expectException(\Error::class);
         /** @phpstan-ignore-next-line */
@@ -130,7 +151,7 @@ final class AuditEventTest extends TestCase
 
     public function testContextCannotBeReplacedFromOutside(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->build();
 
         $this->expectException(\Error::class);
         /** @phpstan-ignore-next-line */
@@ -139,7 +160,7 @@ final class AuditEventTest extends TestCase
 
     public function testWithContextDataReturnsCopy(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->withContextValue('a', 1)->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->withContextValue('a', 1)->build();
         $copy = $event->withContextData(['b' => 2]);
 
         self::assertInstanceOf(AuditEvent::class, $copy);

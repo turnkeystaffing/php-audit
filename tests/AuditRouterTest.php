@@ -102,7 +102,7 @@ final class AuditRouterTest extends TestCase
         $router = $this->router();
 
         $this->expectException(InvalidAuditEventException::class);
-        $router->log((new EventBuilder())->withSuccess()->build());
+        $router->log((new EventBuilder())->withAction('')->withResource('session')->withSuccess()->build());
     }
 
     // --- non-critical: fallback chain ---
@@ -326,7 +326,7 @@ final class AuditRouterTest extends TestCase
             }
         };
         $router = $this->router(enrichers: [$enricher]);
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->withContextValue('email', 'a@b.c')->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->withContextValue('email', 'a@b.c')->build();
 
         $router->log($event);
         self::assertSame(1, $calls); // before flush
