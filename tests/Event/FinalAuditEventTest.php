@@ -37,7 +37,7 @@ final class FinalAuditEventTest extends TestCase
 
     public function testEmptyMapsSerializeAsJsonObjects(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->build();
         $json = (new FinalAuditEvent($event, [], Time::now()))->toJson();
 
         self::assertStringContainsString('"metadata":{}', $json);
@@ -49,7 +49,7 @@ final class FinalAuditEventTest extends TestCase
 
     public function testListLikeMetadataStillSerializesAsObject(): void
     {
-        $event = (new EventBuilder())->withAction('x')->withSuccess()->withContext(['a', 'b'])->build();
+        $event = (new EventBuilder())->withAction('x')->withResource('session')->withSuccess()->withContext(['a', 'b'])->build();
         $json = (new FinalAuditEvent($event, [], Time::now()))->toJson();
 
         self::assertStringContainsString('"metadata":{"0":"a","1":"b"}', $json);

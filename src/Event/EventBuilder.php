@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Turnkey\AuditClient\Event;
 
 use Symfony\Component\Uid\Uuid;
+use Turnkey\AuditClient\Exception\InvalidAuditEventException;
 
 /**
  * Fluent builder for audit events.
@@ -18,20 +19,20 @@ use Symfony\Component\Uid\Uuid;
  *         ->withContext(['email' => $email])
  *         ->build();
  *
- * The builder does not validate — validation happens in the router.
+ * build() requires action and resource; full validation happens in the router.
  */
 final class EventBuilder
 {
     private Uuid $id;
     private \DateTimeImmutable $timestamp;
     private Uuid $requestId;
-    private ?Uuid $userId = null;
-    private string $action = '';
-    private string $resourceType = '';
-    private ?Uuid $resourceId = null;
-    private ?Outcome $outcome = null;
+    private Uuid|null $userId = null;
+    private string $action;
+    private string $resourceType;
+    private Uuid|null $resourceId = null;
+    private Outcome|null $outcome = null;
     private string $failureReason = '';
-    private ?string $ipAddress = null;
+    private string|null $ipAddress = null;
     private string $userAgent = '';
     private bool $critical = false;
 
@@ -60,7 +61,7 @@ final class EventBuilder
         return $this;
     }
 
-    public function withResource(string $resourceType, ?Uuid $resourceId = null): self
+    public function withResource(string $resourceType, Uuid|null $resourceId = null): self
     {
         $this->resourceType = $resourceType;
         $this->resourceId = $resourceId;
@@ -138,16 +139,26 @@ final class EventBuilder
         return $this;
     }
 
+    /**
+     * @throws InvalidAuditEventException when action or resource is not set
+     */
     public function build(): AuditEvent
     {
+        if (!isset($this->action)) {
+            throw new InvalidAuditEventException('audit event action is required');
+        }
+        if (!isset($this->resourceType)) {
+            throw new InvalidAuditEventException('audit event resource type is required');
+        }
+
         return new AuditEvent(
             id: $this->id,
             action: $this->action,
             outcome: $this->outcome,
             timestamp: $this->timestamp,
             requestId: $this->requestId,
-            userId: $this->userId,
             resourceType: $this->resourceType,
+            userId: $this->userId,
             resourceId: $this->resourceId,
             failureReason: $this->failureReason,
             ipAddress: $this->ipAddress,

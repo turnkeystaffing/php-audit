@@ -19,12 +19,12 @@ final readonly class AuditClientConfig
     public function __construct(
         public HttpConfig $http,
         public FileConfig $file,
-        ?AuditConfig $audit = null,
-        ?HttpDeliveryProfile $batchProfile = null,
-        ?HttpDeliveryProfile $criticalProfile = null,
-        ?RedisQueueConfig $redisQueue = null,
-        ?QueueConsumerConfig $consumer = null,
-        ?FileReplayConfig $replay = null,
+        AuditConfig|null $audit = null,
+        HttpDeliveryProfile|null $batchProfile = null,
+        HttpDeliveryProfile|null $criticalProfile = null,
+        RedisQueueConfig|null $redisQueue = null,
+        QueueConsumerConfig|null $consumer = null,
+        FileReplayConfig|null $replay = null,
     ) {
         $this->audit = $audit ?? new AuditConfig();
         $this->batchProfile = $batchProfile ?? HttpDeliveryProfile::batch();

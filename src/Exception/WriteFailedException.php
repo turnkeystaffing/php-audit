@@ -12,7 +12,7 @@ final class WriteFailedException extends AuditException
     public function __construct(
         public readonly string $writer,
         string $message,
-        ?\Throwable $previous = null,
+        \Throwable|null $previous = null,
     ) {
         parent::__construct(sprintf('%s writer: %s', $writer, $message), 0, $previous);
     }

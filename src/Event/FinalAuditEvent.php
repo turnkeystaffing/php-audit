@@ -16,16 +16,16 @@ use Turnkey\AuditClient\Support\Time;
  * embedded AuditEvent fields at the top level, "result" for the outcome,
  * "created_at" for the timestamp and "metadata" for the context.
  */
-final class FinalAuditEvent implements \JsonSerializable
+final readonly class FinalAuditEvent implements \JsonSerializable
 {
     /**
      * @param array<string, mixed> $enrichmentMetadata keys added by enrichers (prefixed "enrichment.")
      */
     public function __construct(
-        public readonly AuditEvent $event,
-        public readonly array $enrichmentMetadata,
-        public readonly \DateTimeImmutable $enrichedAt,
-        public readonly ?\DateTimeImmutable $writtenAt = null,
+        public AuditEvent $event,
+        public array $enrichmentMetadata,
+        public \DateTimeImmutable $enrichedAt,
+        public \DateTimeImmutable|null $writtenAt = null,
     ) {
     }
 
@@ -98,8 +98,8 @@ final class FinalAuditEvent implements \JsonSerializable
             outcome: $outcome,
             timestamp: Time::parse(self::string($data, 'created_at')),
             requestId: self::uuid($data, 'request_id') ?? new NilUuid(),
-            userId: self::uuid($data, 'user_id'),
             resourceType: self::string($data, 'resource_type'),
+            userId: self::uuid($data, 'user_id'),
             resourceId: self::uuid($data, 'resource_id'),
             failureReason: self::string($data, 'failure_reason'),
             ipAddress: is_string($data['ip_address'] ?? null) ? $data['ip_address'] : null,
@@ -134,7 +134,7 @@ final class FinalAuditEvent implements \JsonSerializable
     /**
      * @param array<mixed> $data
      */
-    private static function uuid(array $data, string $key): ?Uuid
+    private static function uuid(array $data, string $key): Uuid|null
     {
         $value = $data[$key] ?? null;
         if (!is_string($value) || $value === '') {

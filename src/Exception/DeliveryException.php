@@ -15,9 +15,9 @@ final class DeliveryException extends AuditException
     private function __construct(
         string $message,
         public readonly bool $retryable,
-        public readonly ?int $httpStatus = null,
-        public readonly ?int $retryAfterMs = null,
-        ?\Throwable $previous = null,
+        public readonly int|null $httpStatus = null,
+        public readonly int|null $retryAfterMs = null,
+        \Throwable|null $previous = null,
     ) {
         parent::__construct($message, 0, $previous);
     }
@@ -27,7 +27,7 @@ final class DeliveryException extends AuditException
         return new self('audit http: network error: ' . $previous->getMessage(), true, null, null, $previous);
     }
 
-    public static function status(int $status, bool $retryable, ?int $retryAfterMs = null): self
+    public static function status(int $status, bool $retryable, int|null $retryAfterMs = null): self
     {
         return new self(sprintf('audit http: delivery failed with status %d', $status), $retryable, $status, $retryAfterMs);
     }

@@ -105,7 +105,7 @@ final class HttpScenario
         return new MockResponse('', ['error' => 'Could not resolve host']);
     }
 
-    public function auditClient(?FixedTokenProvider $tokens = null, ?RecordingLogger $logger = null, string $baseUrl = self::BASE_URL): AuditHttpClient
+    public function auditClient(FixedTokenProvider|null $tokens = null, RecordingLogger|null $logger = null, string $baseUrl = self::BASE_URL): AuditHttpClient
     {
         return new AuditHttpClient(
             new HttpConfig($baseUrl, 'getnative'),

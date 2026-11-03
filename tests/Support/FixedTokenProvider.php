@@ -11,7 +11,7 @@ final class FixedTokenProvider implements TokenProviderInterface
     public int $calls = 0;
 
     /** @param list<string> $tokens returned in order; the last one repeats */
-    public function __construct(private array $tokens = ['test-token'], private ?\Throwable $error = null)
+    public function __construct(private array $tokens = ['test-token'], private \Throwable|null $error = null)
     {
     }
 

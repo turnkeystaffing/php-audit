@@ -18,12 +18,12 @@ use Turnkey\AuditClient\Event\EventBuilder;
  *
  * Outside of a request (console, workers) a plain builder is returned.
  */
-final class RequestEventFactory
+final readonly class RequestEventFactory
 {
     public const string USER_ID_ATTRIBUTE = 'audit_user_id';
     public const string REQUEST_ID_HEADER = 'X-Request-ID';
 
-    public function __construct(private readonly RequestStack $requestStack)
+    public function __construct(private RequestStack $requestStack)
     {
     }
 

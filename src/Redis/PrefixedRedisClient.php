@@ -15,14 +15,14 @@ namespace Turnkey\AuditClient\Redis;
  *
  * Unlike authclient there is no default prefix: an empty prefix means keys are used as-is.
  */
-final class PrefixedRedisClient implements AuditRedisClientInterface
+final readonly class PrefixedRedisClient implements AuditRedisClientInterface
 {
     /**
      * @param object $client Predis\ClientInterface (commands are invoked by name)
      */
     public function __construct(
-        private readonly object $client,
-        private readonly string $prefix = '',
+        private object $client,
+        private string $prefix = '',
     ) {
     }
 

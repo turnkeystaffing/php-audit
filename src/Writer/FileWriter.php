@@ -21,20 +21,20 @@ use Turnkey\AuditClient\Support\Time;
  *    if the replayer renamed the file meanwhile, it reopens, so no event lands in a claimed file;
  *  - size rotation is dropped (it never produced new files in Go).
  */
-final class FileWriter implements AuditWriterInterface
+final readonly class FileWriter implements AuditWriterInterface
 {
     private const int MAX_OPEN_ATTEMPTS = 3;
 
     /** @var \Closure(): \DateTimeImmutable */
-    private readonly \Closure $clock;
+    private \Closure $clock;
 
     /**
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(
-        private readonly FileConfig $config,
-        private readonly LoggerInterface $logger,
-        ?\Closure $clock = null,
+        private FileConfig $config,
+        private LoggerInterface $logger,
+        \Closure|null $clock = null,
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => Time::now();
     }
