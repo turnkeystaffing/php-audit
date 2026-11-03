@@ -16,8 +16,8 @@ final class CriticalAuditException extends AuditException
         string $message,
         public readonly string $eventId,
         public readonly string $action,
-        public readonly ?int $httpStatus = null,
-        ?\Throwable $previous = null,
+        public readonly int|null $httpStatus = null,
+        \Throwable|null $previous = null,
     ) {
         parent::__construct($message, 0, $previous);
     }

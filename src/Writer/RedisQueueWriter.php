@@ -15,12 +15,12 @@ use Turnkey\AuditClient\Redis\AuditRedisClientInterface;
  *
  * Port of Go RedisQueueWriter: LLEN capacity check, a single atomic LPUSH, EXPIRE to bound PII retention.
  */
-final class RedisQueueWriter implements AuditWriterInterface
+final readonly class RedisQueueWriter implements AuditWriterInterface
 {
     public function __construct(
-        private readonly AuditRedisClientInterface $redis,
-        private readonly RedisQueueConfig $config,
-        private readonly LoggerInterface $logger,
+        private AuditRedisClientInterface $redis,
+        private RedisQueueConfig $config,
+        private LoggerInterface $logger,
     ) {
         if ($config->queueTtlSeconds < 0) {
             $logger->warning('audit redis: queue TTL disabled — PII may persist indefinitely in Redis', [

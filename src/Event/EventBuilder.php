@@ -26,13 +26,13 @@ final class EventBuilder
     private Uuid $id;
     private \DateTimeImmutable $timestamp;
     private Uuid $requestId;
-    private ?Uuid $userId = null;
+    private Uuid|null $userId = null;
     private string $action;
     private string $resourceType;
-    private ?Uuid $resourceId = null;
-    private ?Outcome $outcome = null;
+    private Uuid|null $resourceId = null;
+    private Outcome|null $outcome = null;
     private string $failureReason = '';
-    private ?string $ipAddress = null;
+    private string|null $ipAddress = null;
     private string $userAgent = '';
     private bool $critical = false;
 
@@ -61,7 +61,7 @@ final class EventBuilder
         return $this;
     }
 
-    public function withResource(string $resourceType, ?Uuid $resourceId = null): self
+    public function withResource(string $resourceType, Uuid|null $resourceId = null): self
     {
         $this->resourceType = $resourceType;
         $this->resourceId = $resourceId;

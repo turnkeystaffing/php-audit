@@ -29,15 +29,15 @@ use Turnkey\AuditClient\Redis\AuditRedisClientInterface;
  * Known limitation (accepted): if the process dies between RPOP and delivery/requeue,
  * that batch is lost.
  */
-final class RedisQueueConsumer
+final readonly class RedisQueueConsumer
 {
     public function __construct(
-        private readonly AuditRedisClientInterface $redis,
-        private readonly AuditHttpClient $httpClient,
-        private readonly HttpDeliveryProfile $profile,
-        private readonly RedisQueueConfig $queueConfig,
-        private readonly QueueConsumerConfig $config,
-        private readonly LoggerInterface $logger,
+        private AuditRedisClientInterface $redis,
+        private AuditHttpClient $httpClient,
+        private HttpDeliveryProfile $profile,
+        private RedisQueueConfig $queueConfig,
+        private QueueConsumerConfig $config,
+        private LoggerInterface $logger,
     ) {
     }
 

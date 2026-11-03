@@ -28,7 +28,7 @@ final class RecordingLogger extends AbstractLogger
     }
 
     /** @return array<mixed>|null */
-    public function contextOf(string $messageFragment): ?array
+    public function contextOf(string $messageFragment): array|null
     {
         foreach ($this->records as $record) {
             if (str_contains($record['message'], $messageFragment)) {

@@ -14,7 +14,7 @@ final readonly class DeliveryResult
      * @param list<RejectedEvent> $rejected
      */
     public function __construct(
-        public ?array $acceptedIds,
+        public array|null $acceptedIds,
         public array $rejected,
     ) {
     }
@@ -32,7 +32,7 @@ final readonly class DeliveryResult
         return $this->acceptedIds === null || in_array($eventId, $this->acceptedIds, true);
     }
 
-    public function rejectionFor(string $eventId): ?RejectedEvent
+    public function rejectionFor(string $eventId): RejectedEvent|null
     {
         foreach ($this->rejected as $rejected) {
             if ($rejected->eventId === $eventId) {

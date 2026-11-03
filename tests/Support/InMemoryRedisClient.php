@@ -17,12 +17,12 @@ final class InMemoryRedisClient implements AuditRedisClientInterface
     /** @var array<string, int> */
     public array $ttls = [];
 
-    public ?\Throwable $failLPush = null;
-    public ?\Throwable $failRPush = null;
-    public ?\Throwable $failRPop = null;
-    public ?\Throwable $failLLen = null;
-    public ?\Throwable $failExpire = null;
-    public ?\Throwable $failPing = null;
+    public \Throwable|null $failLPush = null;
+    public \Throwable|null $failRPush = null;
+    public \Throwable|null $failRPop = null;
+    public \Throwable|null $failLLen = null;
+    public \Throwable|null $failExpire = null;
+    public \Throwable|null $failPing = null;
 
     public int $lPushCalls = 0;
 

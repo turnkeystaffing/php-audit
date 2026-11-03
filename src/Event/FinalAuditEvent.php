@@ -16,16 +16,16 @@ use Turnkey\AuditClient\Support\Time;
  * embedded AuditEvent fields at the top level, "result" for the outcome,
  * "created_at" for the timestamp and "metadata" for the context.
  */
-final class FinalAuditEvent implements \JsonSerializable
+final readonly class FinalAuditEvent implements \JsonSerializable
 {
     /**
      * @param array<string, mixed> $enrichmentMetadata keys added by enrichers (prefixed "enrichment.")
      */
     public function __construct(
-        public readonly AuditEvent $event,
-        public readonly array $enrichmentMetadata,
-        public readonly \DateTimeImmutable $enrichedAt,
-        public readonly ?\DateTimeImmutable $writtenAt = null,
+        public AuditEvent $event,
+        public array $enrichmentMetadata,
+        public \DateTimeImmutable $enrichedAt,
+        public \DateTimeImmutable|null $writtenAt = null,
     ) {
     }
 
@@ -134,7 +134,7 @@ final class FinalAuditEvent implements \JsonSerializable
     /**
      * @param array<mixed> $data
      */
-    private static function uuid(array $data, string $key): ?Uuid
+    private static function uuid(array $data, string $key): Uuid|null
     {
         $value = $data[$key] ?? null;
         if (!is_string($value) || $value === '') {

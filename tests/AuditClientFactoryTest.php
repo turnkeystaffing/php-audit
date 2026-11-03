@@ -121,7 +121,7 @@ final class AuditClientFactoryTest extends TestCase
     /**
      * @param array<string, mixed> $overrides
      */
-    private function factory(array $overrides = [], ?HttpScenario $http = null, ?InMemoryRedisClient $redis = null): AuditClientFactory
+    private function factory(array $overrides = [], HttpScenario|null $http = null, InMemoryRedisClient|null $redis = null): AuditClientFactory
     {
         $http ??= HttpScenario::of(HttpScenario::acceptAll());
 

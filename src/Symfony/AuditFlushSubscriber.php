@@ -18,11 +18,11 @@ use Turnkey\AuditClient\AuditLoggerInterface;
  * Registered with the lowest priority so events logged by other terminate listeners are included.
  * Event names are strings, so symfony/messenger and symfony/console are not required.
  */
-final class AuditFlushSubscriber implements EventSubscriberInterface
+final readonly class AuditFlushSubscriber implements EventSubscriberInterface
 {
     private const int PRIORITY = -1024;
 
-    public function __construct(private readonly AuditLoggerInterface $auditLogger)
+    public function __construct(private AuditLoggerInterface $auditLogger)
     {
     }
 

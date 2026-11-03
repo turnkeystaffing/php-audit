@@ -17,12 +17,12 @@ use Turnkey\AuditClient\Http\AuditHttpClient;
  * - rejected, retryable=true  -> returned, so the next tier keeps them for a later retry
  * - rejected, retryable=false -> dropped with an error log (retrying will not help)
  */
-final class HttpWriter implements AuditWriterInterface
+final readonly class HttpWriter implements AuditWriterInterface
 {
     public function __construct(
-        private readonly AuditHttpClient $client,
-        private readonly HttpDeliveryProfile $profile,
-        private readonly LoggerInterface $logger,
+        private AuditHttpClient $client,
+        private HttpDeliveryProfile $profile,
+        private LoggerInterface $logger,
     ) {
     }
 

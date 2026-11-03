@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Turnkey\AuditClient\Tests\Support;
 
-final class TempDir
+final readonly class TempDir
 {
-    public readonly string $path;
+    public string $path;
 
     public function __construct()
     {

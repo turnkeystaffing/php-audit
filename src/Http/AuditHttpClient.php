@@ -24,24 +24,24 @@ use Turnkey\AuthClient\TokenProviderInterface;
  *  - redirects are never followed (prevents token leakage / SSRF);
  *  - 202 responses are parsed into a DeliveryResult with per-event rejections.
  */
-final class AuditHttpClient
+final readonly class AuditHttpClient
 {
     private const int MAX_RESPONSE_BYTES = 1_048_576;
     private const int MAX_BACKOFF_MS = 5000;
     private const float HEALTH_TIMEOUT_SECONDS = 5.0;
 
     /** @var \Closure(int): void */
-    private readonly \Closure $sleep;
+    private \Closure $sleep;
 
     /**
      * @param (\Closure(int): void)|null $sleep sleeps for the given milliseconds (injectable for tests)
      */
     public function __construct(
-        private readonly HttpConfig $config,
-        private readonly TokenProviderInterface $tokenProvider,
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
-        ?\Closure $sleep = null,
+        private HttpConfig $config,
+        private TokenProviderInterface $tokenProvider,
+        private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
+        \Closure|null $sleep = null,
     ) {
         $this->sleep = $sleep ?? static function (int $ms): void {
             if ($ms > 0) {

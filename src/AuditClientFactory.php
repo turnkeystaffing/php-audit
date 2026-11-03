@@ -27,14 +27,14 @@ use Turnkey\AuthClient\TokenProviderInterface;
  */
 final class AuditClientFactory
 {
-    private ?AuditHttpClient $httpClient = null;
+    private AuditHttpClient|null $httpClient = null;
 
     public function __construct(
         private readonly AuditClientConfig $config,
         private readonly TokenProviderInterface $tokenProvider,
         private readonly HttpClientInterface $http,
         private readonly LoggerInterface $logger,
-        private readonly ?AuditRedisClientInterface $redis = null,
+        private readonly AuditRedisClientInterface|null $redis = null,
     ) {
     }
 

@@ -388,7 +388,7 @@ final class AuditRouterTest extends TestCase
     /**
      * @param list<EnricherInterface> $enrichers
      */
-    private function router(int $batchSize = 100, ?HttpScenario $http = null, array $enrichers = [], ?FixedTokenProvider $tokens = null): AuditRouter
+    private function router(int $batchSize = 100, HttpScenario|null $http = null, array $enrichers = [], FixedTokenProvider|null $tokens = null): AuditRouter
     {
         $http ??= HttpScenario::of(HttpScenario::acceptAll());
 

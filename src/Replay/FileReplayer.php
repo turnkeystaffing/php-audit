@@ -29,7 +29,7 @@ use Turnkey\AuditClient\Support\Time;
  * A batch with retryable per-event rejections is not advanced past: the whole batch is
  * re-sent on the next pass (the audit service deduplicates by event_id).
  */
-final class FileReplayer
+final readonly class FileReplayer
 {
     private const string LOCK_FILE = '.replay.lock';
     private const string CLAIMED_SUFFIX = '.replaying';
@@ -37,18 +37,18 @@ final class FileReplayer
     private const string FILE_PATTERN = '/^audit-(\d{4}-\d{2}-\d{2}(?:-\d{2})?)\.jsonl(\.replaying)?$/';
 
     /** @var \Closure(): \DateTimeImmutable */
-    private readonly \Closure $clock;
+    private \Closure $clock;
 
     /**
      * @param (\Closure(): \DateTimeImmutable)|null $clock
      */
     public function __construct(
-        private readonly FileConfig $fileConfig,
-        private readonly AuditHttpClient $httpClient,
-        private readonly HttpDeliveryProfile $profile,
-        private readonly FileReplayConfig $config,
-        private readonly LoggerInterface $logger,
-        ?\Closure $clock = null,
+        private FileConfig $fileConfig,
+        private AuditHttpClient $httpClient,
+        private HttpDeliveryProfile $profile,
+        private FileReplayConfig $config,
+        private LoggerInterface $logger,
+        \Closure|null $clock = null,
     ) {
         $this->clock = $clock ?? static fn (): \DateTimeImmutable => Time::now();
     }
@@ -174,7 +174,7 @@ final class FileReplayer
      *
      * @return string|null path of the claimed file, or null to skip it for now
      */
-    private function claim(string $name): ?string
+    private function claim(string $name): string|null
     {
         $path = $this->fileConfig->directory . '/' . $name;
         if (str_ends_with($name, self::CLAIMED_SUFFIX)) {
@@ -304,7 +304,7 @@ final class FileReplayer
      *
      * @return array{delivered: int, dropped: int}|null null = transient failure, stop and retry later
      */
-    private function sendBatch(array $batch, string $file): ?array
+    private function sendBatch(array $batch, string $file): array|null
     {
         try {
             $result = $this->httpClient->send($batch, $this->profile);
