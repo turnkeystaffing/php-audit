@@ -59,7 +59,7 @@ final class HttpScenario
     public static function acceptAll(): \Closure
     {
         return static function (array $body): MockResponse {
-            $ids = array_map(static fn (array $e) => $e['event_id'], $body['events'] ?? []);
+            $ids = array_map(static fn (array $e) => $e['event_id'], self::eventsOf($body));
 
             return new MockResponse(
                 json_encode(['accepted' => count($ids), 'rejected' => 0, 'event_ids' => $ids, 'errors' => []], JSON_THROW_ON_ERROR),
@@ -78,7 +78,7 @@ final class HttpScenario
         return static function (array $body) use ($rejectIndexes, $reason): MockResponse {
             $accepted = [];
             $errors = [];
-            foreach ($body['events'] ?? [] as $i => $event) {
+            foreach (self::eventsOf($body) as $i => $event) {
                 if (array_key_exists($i, $rejectIndexes)) {
                     $errors[] = ['index' => $i, 'event_id' => $event['event_id'], 'reason' => $reason, 'retryable' => $rejectIndexes[$i]];
                 } else {
@@ -95,9 +95,48 @@ final class HttpScenario
         };
     }
 
+    /** 400 from the single-event endpoint: the event failed validation. */
+    public static function singleRejected(string $reason = 'invalid event', bool $retryable = false): \Closure
+    {
+        return static fn (array $body): MockResponse => new MockResponse(json_encode([
+            'accepted' => 0,
+            'rejected' => 1,
+            'event_ids' => [],
+            'errors' => [['index' => 0, 'event_id' => $body['event_id'] ?? '', 'reason' => $reason, 'retryable' => $retryable]],
+        ], JSON_THROW_ON_ERROR), ['http_code' => 400]);
+    }
+
     public static function status(int $code, array $headers = []): MockResponse
     {
         return new MockResponse('{}', ['http_code' => $code, 'response_headers' => $headers]);
+    }
+
+    /**
+     * Event IDs sent in a recorded request, for both the batch and the single-event endpoint.
+     *
+     * @param array{body: array<mixed>|null} $request
+     *
+     * @return list<string>
+     */
+    public static function eventIdsOf(array $request): array
+    {
+        return array_column(self::eventsOf($request['body'] ?? []), 'event_id');
+    }
+
+    /**
+     * Events of a request body: the batch "events" list, or the bare single-event DTO.
+     *
+     * @param array<mixed> $body
+     *
+     * @return list<array<mixed>>
+     */
+    private static function eventsOf(array $body): array
+    {
+        if (isset($body['events']) && is_array($body['events'])) {
+            return array_values($body['events']);
+        }
+
+        return isset($body['event_id']) ? [$body] : [];
     }
 
     public static function networkError(): MockResponse

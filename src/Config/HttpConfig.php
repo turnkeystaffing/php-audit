@@ -43,6 +43,11 @@ final readonly class HttpConfig
         $this->baseUrl = rtrim($baseUrl, '/');
     }
 
+    public function eventUrl(): string
+    {
+        return $this->baseUrl . '/api/v1/events';
+    }
+
     public function batchUrl(): string
     {
         return $this->baseUrl . '/api/v1/events/batch';

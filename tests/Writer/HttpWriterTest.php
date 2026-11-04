@@ -32,6 +32,17 @@ final class HttpWriterTest extends TestCase
         $writer->writeBatch(Events::finals(1));
     }
 
+    public function testSingleEventValidationErrorIsDroppedNotForwarded(): void
+    {
+        $http = HttpScenario::of(HttpScenario::singleRejected('unknown action'));
+        $logger = new RecordingLogger();
+        $writer = new HttpWriter($http->auditClient(logger: $logger), HttpDeliveryProfile::batch(), $logger);
+        $events = Events::finals(1);
+
+        self::assertSame([], $writer->writeBatch($events));
+        self::assertSame($events[0]->id(), $logger->contextOf('rejected by audit service, dropping')['event_id']);
+    }
+
     public function testRetryableRejectionsAreForwardedAndPermanentOnesDropped(): void
     {
         $http = HttpScenario::of(HttpScenario::rejectIndexes([0 => true, 2 => false]));
