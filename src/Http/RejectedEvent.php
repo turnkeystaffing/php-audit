@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Turnkey\AuditClient\Http;
 
 /**
- * A single event the audit service refused in an otherwise accepted (202) batch.
+ * A single event the audit service refused: an entry of errors[] in a 202 batch response,
+ * or in a 400 response of the single-event endpoint.
  */
 final readonly class RejectedEvent
 {

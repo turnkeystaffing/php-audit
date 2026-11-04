@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Turnkey\AuditClient\Http;
 
 /**
- * Outcome of a batch the audit service answered with 202 Accepted.
+ * Outcome of a delivery the audit service answered with 202 Accepted, or with
+ * 400 and per-event errors (single-event endpoint validation failure).
  */
 final readonly class DeliveryResult
 {

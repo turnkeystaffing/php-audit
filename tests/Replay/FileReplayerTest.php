@@ -49,7 +49,7 @@ final class FileReplayerTest extends TestCase
         self::assertSame(['.replay.lock'], $this->dir->files());
         self::assertSame(
             array_map(static fn ($e) => $e->id(), $events),
-            array_column($http->requests[1]['body']['events'], 'event_id'),
+            HttpScenario::eventIdsOf($http->requests[1]),
         );
     }
 
@@ -96,8 +96,8 @@ final class FileReplayerTest extends TestCase
 
         $this->replayer($http)->replayOnce();
 
-        self::assertSame($older[0]->id(), $http->requests[1]['body']['events'][0]['event_id']);
-        self::assertSame($newer[0]->id(), $http->requests[2]['body']['events'][0]['event_id']);
+        self::assertSame($older[0]->id(), HttpScenario::eventIdsOf($http->requests[1])[0]);
+        self::assertSame($newer[0]->id(), HttpScenario::eventIdsOf($http->requests[2])[0]);
     }
 
     public function testTransientFailureKeepsProgressAndResumesWithoutDuplicates(): void
@@ -119,7 +119,7 @@ final class FileReplayerTest extends TestCase
         self::assertSame(ReplayResult::DONE, $second->status);
         self::assertSame(3, $second->eventsDelivered);
         $resent = array_merge(...array_map(
-            static fn (array $r) => array_column($r['body']['events'] ?? [], 'event_id'),
+            static fn (array $r) => HttpScenario::eventIdsOf($r),
             array_slice($http2->requests, 1),
         ));
         self::assertSame(array_map(static fn ($e) => $e->id(), array_slice($events, 2)), $resent);
@@ -215,7 +215,7 @@ final class FileReplayerTest extends TestCase
         $result = $this->replayer($http)->replayOnce();
 
         self::assertSame(1, $result->eventsDelivered);
-        self::assertSame('0192f3a1-7c2e-7b4a-9d3e-1a2b3c4d5e6f', $http->requests[1]['body']['events'][0]['event_id']);
+        self::assertSame('0192f3a1-7c2e-7b4a-9d3e-1a2b3c4d5e6f', HttpScenario::eventIdsOf($http->requests[1])[0]);
     }
 
     /** @return list<FinalAuditEvent> */

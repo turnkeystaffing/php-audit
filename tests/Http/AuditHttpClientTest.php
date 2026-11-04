@@ -16,7 +16,7 @@ use Turnkey\AuditClient\Tests\Support\RecordingLogger;
 
 final class AuditHttpClientTest extends TestCase
 {
-    public function testPostsBatchWithBearerToken(): void
+    public function testMultipleEventsUseBatchEndpoint(): void
     {
         $http = HttpScenario::of(HttpScenario::acceptAll());
         $events = Events::finals(2);
@@ -36,6 +36,128 @@ final class AuditHttpClientTest extends TestCase
         self::assertTrue($result->isAccepted($events[0]->id()));
         self::assertTrue($result->isAccepted($events[1]->id()));
         self::assertFalse($result->hasRejections());
+    }
+
+    public function testSingleEventPostsToEventsEndpointWithoutWrapper(): void
+    {
+        $http = HttpScenario::of(HttpScenario::acceptAll());
+        $events = Events::finals(1);
+
+        $result = $http->auditClient()->send($events, HttpDeliveryProfile::critical());
+
+        self::assertCount(1, $http->requests);
+        $request = $http->requests[0];
+        self::assertSame('POST', $request['method']);
+        self::assertSame('https://audit.example.com/api/v1/events', $request['url']);
+        self::assertContains('Authorization: Bearer test-token', $request['headers']);
+        self::assertContains('Content-Type: application/json', $request['headers']);
+        self::assertArrayNotHasKey('events', $request['body']);
+        self::assertSame($events[0]->id(), $request['body']['event_id']);
+        self::assertSame('getnative', $request['body']['service']);
+        self::assertSame(['type' => 'session'], $request['body']['resource']);
+        self::assertSame(0, $request['options']['max_redirects']);
+        self::assertTrue($result->isAccepted($events[0]->id()));
+    }
+
+    public function testSingleEventDuplicateIsAccepted(): void
+    {
+        $events = Events::finals(1);
+        $http = HttpScenario::of(new MockResponse(
+            sprintf('{"accepted":1,"rejected":0,"event_ids":["%s"],"errors":[]}', $events[0]->id()),
+            ['http_code' => 202],
+        ));
+
+        $result = $http->auditClient()->send($events, HttpDeliveryProfile::critical());
+
+        self::assertTrue($result->isAccepted($events[0]->id()));
+        self::assertFalse($result->hasRejections());
+    }
+
+    public function testSingleEventValidationErrorIsRejectionWithReason(): void
+    {
+        $http = HttpScenario::of(HttpScenario::singleRejected('resource.type is required'));
+        $logger = new RecordingLogger();
+        $events = Events::finals(1);
+
+        $result = $http->auditClient(logger: $logger)->send($events, HttpDeliveryProfile::critical());
+
+        self::assertFalse($result->isAccepted($events[0]->id()));
+        self::assertSame('resource.type is required', $result->rejectionFor($events[0]->id())?->reason);
+        self::assertFalse($result->rejectionFor($events[0]->id())?->retryable);
+        self::assertSame(1, $http->postCount());
+        self::assertTrue($logger->has('warning', 'rejected some events'));
+    }
+
+    public function testSingleEventValidationErrorResolvesEventIdFromIndex(): void
+    {
+        $http = HttpScenario::of(new MockResponse(
+            '{"accepted":0,"rejected":1,"event_ids":[],"errors":[{"index":0,"reason":"bad","retryable":false}]}',
+            ['http_code' => 400],
+        ));
+        $events = Events::finals(1);
+
+        $result = $http->auditClient()->send($events, HttpDeliveryProfile::critical());
+
+        self::assertSame('bad', $result->rejectionFor($events[0]->id())?->reason);
+    }
+
+    public function testSingleEventErrorResponseWithoutErrorsIsPermanent(): void
+    {
+        $http = HttpScenario::of(new MockResponse(
+            '{"error":"invalid_request","error_description":"malformed JSON"}',
+            ['http_code' => 400],
+        ));
+
+        try {
+            $http->auditClient()->send(Events::finals(1), HttpDeliveryProfile::critical());
+            self::fail('expected DeliveryException');
+        } catch (DeliveryException $e) {
+            self::assertFalse($e->retryable);
+            self::assertSame(400, $e->httpStatus);
+        }
+
+        self::assertSame(1, $http->postCount());
+    }
+
+    public function testBatchBadRequestWithErrorsIsStillPermanentFailure(): void
+    {
+        $http = HttpScenario::of(new MockResponse(
+            '{"accepted":0,"rejected":1,"event_ids":[],"errors":[{"index":0,"reason":"bad","retryable":false}]}',
+            ['http_code' => 400],
+        ));
+
+        try {
+            $http->auditClient()->send(Events::finals(2), HttpDeliveryProfile::batch());
+            self::fail('expected DeliveryException');
+        } catch (DeliveryException $e) {
+            self::assertFalse($e->retryable);
+            self::assertSame(400, $e->httpStatus);
+        }
+
+        self::assertSame('https://audit.example.com/api/v1/events/batch', $http->requests[0]['url']);
+    }
+
+    public function testSingleEventRetriesTooManyRequestsAndServerErrors(): void
+    {
+        $http = HttpScenario::of(
+            HttpScenario::status(503),
+            HttpScenario::status(429, ['Retry-After: 1']),
+            HttpScenario::acceptAll(),
+        );
+        $tokens = new FixedTokenProvider(['first', 'second', 'third']);
+        $events = Events::finals(1);
+
+        $result = $http->auditClient($tokens)->send($events, HttpDeliveryProfile::critical());
+
+        self::assertTrue($result->isAccepted($events[0]->id()));
+        self::assertSame(3, $http->postCount());
+        self::assertSame(
+            array_fill(0, 3, 'https://audit.example.com/api/v1/events'),
+            array_column($http->requests, 'url'),
+        );
+        self::assertSame([100, 1000], $http->sleeps);
+        self::assertSame(3, $tokens->calls);
+        self::assertContains('Authorization: Bearer third', $http->requests[2]['headers']);
     }
 
     public function testEmptyBatchSendsNothing(): void
@@ -254,6 +376,9 @@ final class AuditHttpClientTest extends TestCase
 
     public function testConfigTrimsTrailingSlash(): void
     {
-        self::assertSame('https://audit.example.com/api/v1/events/batch', (new HttpConfig('https://audit.example.com/', 's'))->batchUrl());
+        $config = new HttpConfig('https://audit.example.com/', 's');
+
+        self::assertSame('https://audit.example.com/api/v1/events/batch', $config->batchUrl());
+        self::assertSame('https://audit.example.com/api/v1/events', $config->eventUrl());
     }
 }

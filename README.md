@@ -193,7 +193,10 @@ This library only provides services `RedisQueueConsumer`, `FileReplayer` and you
 
 - **Files** — `{file_directory}/audit-YYYY-MM-DD.jsonl` (or `-HH` with hourly rotation), directory `0700`, files `0600`. Each batch is written under `flock`, so all PHP-FPM workers can share one directory. In Kubernetes use a persistent volume shared with the replay process.
 
-- **HTTP** — `POST /api/v1/events/batch` with `{"events":[{event_id, service, action, actor, resource{type,id}, outcome, timestamp, metadata?, failure_reason?}]}`. As in Go, `ip_address`, `user_agent`, `request_id` and enrichment metadata are not part of the wire format.
+- **HTTP** — the wire event is `{event_id, service, action, actor, resource{type,id}, outcome, timestamp, metadata?, failure_reason?}`. As in Go, `ip_address`, `user_agent`, `request_id` and enrichment metadata are not part of the wire format.
+  - **One event** (every critical event, and any flush/replay/consume batch that holds a single event) — `POST /api/v1/events` with the bare event as the body (single-event rate limit). Re-sending an event ID the service has already accepted returns 202 with that ID in `event_ids`, so a resend counts as delivered. A validation failure (400 with `errors`) is reported as a rejection carrying the service's reason: `logCritical()` throws `CriticalAuditException::rejected()` (no HTTP status, no previous exception), async paths drop the event with an error log.
+  - **Several events** — `POST /api/v1/events/batch` with `{"events":[...]}`. Known limitation: the batch endpoint silently skips duplicates (they appear in neither `event_ids` nor `errors`). Async paths only look at `errors`, so a duplicate counts as delivered there; critical delivery never uses the batch endpoint.
+  - The Go client always uses the batch endpoint.
 
 ## Operational notes
 

@@ -54,7 +54,7 @@ final class RedisQueueConsumerTest extends TestCase
         self::assertSame(2, $second->delivered);
         self::assertTrue($third->isEmpty());
         $sentIds = array_merge(...array_map(
-            static fn (array $r) => array_column($r['body']['events'], 'event_id'),
+            static fn (array $r) => HttpScenario::eventIdsOf($r),
             $http->requests,
         ));
         self::assertSame(array_map(static fn ($e) => $e->id(), $events), $sentIds);
@@ -78,7 +78,7 @@ final class RedisQueueConsumerTest extends TestCase
         $this->consumer($http2)->consumeBatch();
         self::assertSame(
             array_map(static fn ($e) => $e->id(), $events),
-            array_column($http2->requests[0]['body']['events'], 'event_id'),
+            HttpScenario::eventIdsOf($http2->requests[0]),
         );
     }
 

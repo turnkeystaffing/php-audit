@@ -238,14 +238,37 @@ final class AuditRouterTest extends TestCase
         self::assertSame(0, $router->bufferedCount());
     }
 
-    public function testCriticalRejectedByServiceThrows(): void
+    public function testCriticalDuplicateIsAccepted(): void
     {
-        $http = HttpScenario::of(HttpScenario::rejectIndexes([0 => false], 'schema violation'));
+        $event = Events::event('password_change', critical: true);
+        $http = HttpScenario::of(new \Symfony\Component\HttpClient\Response\MockResponse(
+            sprintf('{"accepted":1,"rejected":0,"event_ids":["%s"],"errors":[]}', $event->id->toRfc4122()),
+            ['http_code' => 202],
+        ));
         $router = $this->router(http: $http);
 
-        $this->expectException(CriticalAuditException::class);
-        $this->expectExceptionMessage('schema violation');
-        $router->log(Events::event('password_change', critical: true));
+        $router->logCritical($event);
+        $router->logCritical($event);
+
+        self::assertSame(2, $http->postCount());
+        self::assertSame('https://audit.example.com/api/v1/events', $http->requests[1]['url']);
+    }
+
+    public function testCriticalRejectedByServiceThrows(): void
+    {
+        $http = HttpScenario::of(HttpScenario::singleRejected('schema violation'));
+        $router = $this->router(http: $http);
+
+        try {
+            $router->log(Events::event('password_change', critical: true));
+            self::fail('expected CriticalAuditException');
+        } catch (CriticalAuditException $e) {
+            self::assertStringContainsString('schema violation', $e->getMessage());
+            self::assertNull($e->httpStatus);
+            self::assertNull($e->getPrevious());
+        }
+
+        self::assertSame(1, $http->postCount());
     }
 
     public function testCriticalMissingFromAcceptedIdsThrows(): void
@@ -304,7 +327,7 @@ final class AuditRouterTest extends TestCase
         $router->log(Events::event('password_change', critical: true));
 
         self::assertSame(1, $router->bufferedCount());
-        self::assertCount(1, $http->requests[0]['body']['events']);
+        self::assertCount(1, HttpScenario::eventIdsOf($http->requests[0]));
     }
 
     // --- enrichment ---

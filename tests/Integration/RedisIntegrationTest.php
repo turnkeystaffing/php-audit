@@ -84,7 +84,7 @@ final class RedisIntegrationTest extends TestCase
 
         self::assertSame(
             array_map(static fn ($e) => $e->id(), $events),
-            array_column($up->requests[0]['body']['events'], 'event_id'),
+            HttpScenario::eventIdsOf($up->requests[0]),
         );
         self::assertSame(0, $this->redis->lLen(RedisQueueConfig::DEFAULT_QUEUE_KEY));
     }
